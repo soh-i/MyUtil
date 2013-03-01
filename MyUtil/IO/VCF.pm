@@ -2,17 +2,22 @@
 
 use strict;
 use warnings;
-use Carp;
 
 package MyUtil::IO::VCF;
 
 sub new {
-    my $class = shift;
-    my $self = { data => shift,
-               };
+    use Carp;
     
-    open my $fh, '<', $self->{data} or die 'Can not read vcf';
-    while (my $line=<$fh>) {
+    my $class = shift;
+    my $self = { data => undef,
+                 @_,
+               };
+    unless ( defined $self->{data} ) {
+        confess('croak: data => in.vcf is required for initializing instance');
+    }
+    
+    open my $fh, '<', $self->{data} or croak('Can not read vcf file');
+    while (my $line = <$fh>) {
         next if !$line;
         next if $line =~ m/^#{2}|^#{1}/;
         my @t = split /\t/, $line;
@@ -49,7 +54,7 @@ sub get_all_vcf {
 
 sub get_chr {
     my $self = shift;
-    my $id = shift;
+    my $id   = shift;
     
     my $chr = $self->{$id}->{chr};
     return $chr if defined $chr;
@@ -57,7 +62,7 @@ sub get_chr {
 
 sub get_depth {
     my $self = shift;
-    my $id = shift;
+    my $id   = shift;
         
     if ( $self->{$id}->{info} =~ m/(DP=\d+)/g ) {
         ( my $DP = $1 ) =~ s/^DP=//;
@@ -65,41 +70,39 @@ sub get_depth {
     }
 }
 
-sub get_DP4 {
+sub extract_DP4 {
     my $self = shift;
-    my $id = shift;
+    my $id   = shift;
     
-    if ( $self->{$id}->{info} =~ m/(DP4=\d+\,\d+\,\d+\,\d+)/g ) {
-        ( my $DP4 = $1 ) =~ s/^DP4=//;
+    if ($self->{$id}->{info} =~ m/(DP4=\d+\,\d+\,\d+\,\d+)/g) {
+        (my $DP4 = $1) =~ s/^DP4=//;
         my @DP4 = split /\,/, $DP4;
-        wantarray ? return @DP4 : return join ",", @DP4;
+        return join ",", @DP4;
     }
 }
 
-=pod
-        my $ref_count = $DP4[0] + $DP4[1];
-        my $alt_count = $DP4[2] + $DP4[3];
-        my $edit_ratio = $alt_count / ( $alt_count + $ref_count );
-        
-        $data->{$primary}->{DP4}->{f_ref}      = $DP4[0];
-        $data->{$primary}->{DP4}->{r_ref}      = $DP4[1];
-        $data->{$primary}->{DP4}->{f_alt}      = $DP4[2];
-        $data->{$primary}->{DP4}->{r_alt}      = $DP4[3];
-        $data->{$primary}->{DP4}->{edit_ratio} = $edit_ratio;
-    }
-}
-
-=cut
-
-sub get_PV4 {
+sub extract_PV4 {
     my $self = shift;
-    my $id = shift;
+    my $id   = shift;
     
-    if ( $self->{$id}->{info} =~ m/(PV4=.+\,.+\,.+\,.+)/g ) {
+    if ($self->{$id}->{info} =~ m/(PV4=.+\,.+\,.+\,.+)/g) {
         ( my $PV4 = $1 ) =~ s/PV4=//g;
         my @PV4 = split /\,/, $PV4;
-        wantarray ? return @PV4 :  return join ",", @PV4;
+        return join ",", @PV4;
     }
 }
+
+sub calculate_edit_ratio {
+    my $self = shift;
+    my $id   = shift;
+    my @DP4 = split /\,/, extract_DP4($id);
+    
+    my $ref_count = $DP4[0] + $DP4[1];
+    my $alt_count = $DP4[2] + $DP4[3];
+    if ($ref_count>0) {
+        return;
+    }
+}
+
 
 1;
