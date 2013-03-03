@@ -1,9 +1,11 @@
 MyUtil
 ======
 
-## Usage:
-### VCF paser class
+## VCV Parser
+* The variant call format (VCF) is a generic format for storing DNA polymorphism data such as SNPs, insertions, deletions and structural variants, together with rich annotations.
+* [Variant Call Format v.4.1.](http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41)
 
+### Usage:
 ```perl
 #!/usr/bin/env perl
 use warnings;
@@ -19,3 +21,4 @@ for my $entory ($v->get_all_vcf()) {
 
 ```
 
+## BAM Parser
