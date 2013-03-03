@@ -15,10 +15,11 @@ use MyUtil::IO::VCF;
 my $v = MyUtil::IO::VCF->new(data=>'./test.vcf');
 for my $entory ($v->get_all_vcf()) {
     print $v->depth($entory);
-    print $v->chr($entory);
+    print $v->chromosome($entory);
     print $v->extract_DP4($entory);
  }
 
 ```
 
 ## BAM Parser
+* BAM is the compressed binary version of the Sequence Alignment/Map (SAM) format, a compact and index-able representation of nucleotide sequence alignments by using Next-generation sequencing.
