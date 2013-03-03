@@ -1,28 +1,24 @@
-#!/usr/bin/env perl
+package MyUtil::IO::VCF;
 
 use strict;
 use warnings;
+use Carp;
 
-package MyUtil::IO::VCF;
 
 sub new {
-    use Carp;
-    
     my $class = shift;
     my $self = { data => undef,
                  @_,
                };
-    unless ( defined $self->{data} ) {
+    unless (defined $self->{data}) {
         confess('croak: data => in.vcf is required for initializing instance');
     }
     
     open my $fh, '<', $self->{data} or croak('Can not read vcf file');
     while (my $line = <$fh>) {
-        next if !$line;
         next if $line =~ m/^#{2}|^#{1}/;
         my @t = split /\t/, $line;
         next if $t[4] =~ m/[ATGC]?\,.+/g;
-                
         my $chr    = $t[0];
         my $pos    = $t[1];
         my $id     = $t[2];
@@ -33,39 +29,67 @@ sub new {
         my $info   = $t[7];
         my $add    = $t[9];
         
-        my $primary = "$chr:$pos";
-        $self->{$primary}->{chr}    = $chr;
-        $self->{$primary}->{pos}    = $pos;
-        $self->{$primary}->{id}     = $id;
-        $self->{$primary}->{ref}    = $ref;
-        $self->{$primary}->{alt}    = $alt;
-        $self->{$primary}->{qual}   = $qual;
-        $self->{$primary}->{filter} = $filter;
-        $self->{$primary}->{info}   = $info;
-        $self->{$primary}->{add}    = $info;
+        my $primary = "$chr-$pos";
+        if ($primary) {
+            $self->{$primary}->{chr}    = $chr;
+            $self->{$primary}->{pos}    = $pos;
+            $self->{$primary}->{id}     = $id;
+            $self->{$primary}->{ref}    = $ref;
+            $self->{$primary}->{alt}    = $alt;
+            $self->{$primary}->{qual}   = $qual;
+            $self->{$primary}->{filter} = $filter;
+            $self->{$primary}->{info}   = $info;
+            $self->{$primary}->{add}    = $info;
+        }
     }
     return bless $self, $class;
 }
 
 sub get_all_vcf {
     my $self = shift;
-    return keys %$self;
+    return keys %{$self};
 }
 
-sub get_chr {
-    my $self = shift;
-    my $id   = shift;
-    
-    my $chr = $self->{$id}->{chr};
-    return $chr if defined $chr;
+sub chromosome {
+    my ($self, $id) = @_;
+    return $self->{$id}->{chr};
 }
 
+sub position {
+    my ($self, $id) = @_;
+    return $self->{$id}->{pos};
+
+sub id {
+    my ($self, $id) = @_;
+    return $self->{$id}->{id};
+}
+
+sub ref_base {
+    my ($self, $id) = @_;
+    return $self->{$id}->{ref};
+}
+
+sub alt_base {
+    my ($self, $id) = @_;
+    return $self->{$id}->{alt};
+}
+
+sub qual {
+    my ($self, $id) = @_;
+    return $self->{$id}->{qual};
+}
+
+sub filt {
+    my ($self, $id) = @_;
+    return $self->{$id}->{filt};
+}
+       
 sub get_depth {
     my $self = shift;
     my $id   = shift;
         
-    if ( $self->{$id}->{info} =~ m/(DP=\d+)/g ) {
-        ( my $DP = $1 ) =~ s/^DP=//;
+    if ($self->{$id}->{info} =~ m/(DP=\d+)/g) {
+        (my $DP = $1) =~ s/^DP=//;
         return $DP;
     }
 }
@@ -86,7 +110,7 @@ sub extract_PV4 {
     my $id   = shift;
     
     if ($self->{$id}->{info} =~ m/(PV4=.+\,.+\,.+\,.+)/g) {
-        ( my $PV4 = $1 ) =~ s/PV4=//g;
+        (my $PV4 = $1) =~ s/PV4=//g;
         my @PV4 = split /\,/, $PV4;
         return join ",", @PV4;
     }
@@ -99,10 +123,16 @@ sub calculate_edit_ratio {
     
     my $ref_count = $DP4[0] + $DP4[1];
     my $alt_count = $DP4[2] + $DP4[3];
-    if ($ref_count>0) {
+    if ($ref_count > 0) {
         return;
     }
 }
 
 
 1;
+
+
+
+
+
+
